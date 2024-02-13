@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+describe_task() { aws ecs describe-tasks --cluster $ECS_CLUSTER --tasks $TASK_ARN; }
+REVISION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION | jq -r .taskDefinition.revision)
+## Network configurations
+# GET_SUBNETS=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=${PREFIX}-pvt-* | jq '[.Subnets[].SubnetId]')
+SUBNETS=$(echo $SUBNETS | sed 's/\ //g')
+echo $SUBNETS
+NETWORK=awsvpcConfiguration={subnets=${SUBNETS},securityGroups=[${SECURITY_GROUP}],assignPublicIp=DISABLED}
+## Migration task
+echo "Launching Task..."
+RESPONSE=$(aws ecs run-task --cluster $ECS_CLUSTER --task-definition $TASK_DEFINITION:$REVISION --launch-type FARGATE  --network-configuration $NETWORK)
+echo "Task launched successfully. \n$RESPONSE"
+TASK_ARN=$(echo $RESPONSE | jq -r '.tasks[].taskArn')
+echo "Waiting for task status to be running"
+RESPONSE=$(aws ecs wait tasks-running --cluster $ECS_CLUSTER --tasks $TASK_ARN)
+if [[ ! -z "$RESPONSE" ]]; then describe_task && exit 1; fi
+echo "Waiting for task status to be stopped"
+aws ecs wait tasks-stopped --cluster $ECS_CLUSTER --tasks $TASK_ARN
+DESCRIBE_TASK=$(describe_task)
+EXIT_STATUS=$(echo $DESCRIBE_TASK | jq .tasks[].containers[].exitCode)
+TASK_ID=$(echo $TASK_ARN | cut -d "/" -f3)
+echo "Loading migration task logs.."
+echo $TASK_ID $ECS_CLUSTER
+echo -e "--------logs---------\n"
+
+LOG_GROUP=$(aws ecs describe-task-definition --task-definition "$TASK_DEFINITION:$REVISION" | jq -r '.taskDefinition.containerDefinitions[0].logConfiguration.options."awslogs-group"')
+LOG_GROUP_PREFIX=$(aws ecs describe-task-definition --task-definition "$TASK_DEFINITION:$REVISION" | jq -r '.taskDefinition.containerDefinitions[0].logConfiguration.options."awslogs-stream-prefix"')
+
+aws --profile $AWS_PROFILE --region $AWS_REGION \
+    logs get-log-events --log-group-name $LOG_GROUP \
+    --log-stream-name "$LOG_GROUP_PREFIX/$TASK_DEFINITION/$TASK_ID" | jq -r ".events[].message" 
+
+echo "--------logs---------"
+
+if [[ $EXIT_STATUS == 0 ]]; then echo "Migration successfully completed"; else echo $DESCRIBE_TASK && exit 1; fi

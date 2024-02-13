@@ -1,0 +1,54 @@
+name: Deploy
+run-name: '${{ github.workflow }} | ${{ github.ref_name }}'
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  Path-Filters:
+    runs-on: ubuntu-latest
+    outputs:
+      migration: ${{ steps.changes.outputs.migration }}
+    steps:
+      - uses: actions/checkout@v3
+
+      # Used dorny/paths-filter@v2 to apply path filters
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            migration:
+              - 'src/database/migrations/**'
+              - '.github/workflows/migration.yml'
+          base: '${{ github.ref }}'
+          initial-fetch-depth: '1'
+
+  Build-and-Push-image:
+    needs: Path-Filters
+    uses: './.github/workflows/build.yml'
+    secrets: inherit
+
+  DB-Migration:
+    needs:
+      - Path-Filters
+      - Build-and-Push-image
+    # DB-Migration job will run only when there are changes in 'src/database/migrations/' directory or '.github/workflows/migration.yml' file
+    if: needs.Path-Filters.outputs.migration == 'true'
+    uses: './.github/workflows/migration.yml'
+    secrets: inherit
+
+  Deployment:
+    needs:
+      - Path-Filters
+      - DB-Migration
+      - Build-and-Push-image
+    # here we have used always() to execute the job every time it is called, considering all possible combinations of applied conditions.
+    if: |
+      always() && 
+      ( needs.DB-Migration.result == 'success' || needs.DB-Migration.result == 'skipped' ) && 
+      ( needs.Build-and-Push-image.result == 'success' )
+    uses: './.github/workflows/deploy.yml'
+    secrets: inherit

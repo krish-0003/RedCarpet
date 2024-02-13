@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      .maindiv {
+        background-color: #f2f4f7;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 20%;
+      }
+      .internaldiv {
+        background-color: #ffffff;
+        padding: 20px;
+      }
+      .header {
+        padding: 20px;
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+        align-items: center;
+        font-size: 22px;
+        font-weight: 900;
+        color: #1e2033;
+      }
+      .messagebody1 {
+        padding: 10px 20px;
+        font-size: 20px;
+        color: #101828;
+        display: flex;
+        flex-direction: column;
+        text-align: justify;
+      }
+      .messagebody2 {
+        padding: 10px 20px;
+        font-size: 16px;
+        color: #101828;
+        display: flex;
+        flex-direction: column;
+        text-align: justify;
+      }
+      .buttonbody {
+        padding: 10px 20px;
+      }
+      .approvebutton {
+        padding: 10px 20px;
+        font-size: 20px;
+        background-color: #bb1542;
+        color: #ffffff;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #344054;
+        padding: 30px 0px 10px 0px;
+      }
+      .pendingrequest {
+        padding: 10px 20px;
+        font-size: 16px;
+        color: #101828;
+        display: flex;
+        flex-direction: column;
+        text-align: justify;
+      }
+      a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body style="font-family: 'Arial'">
+    <div class="maindiv">
+      <div class="internaldiv">
+        <div class="header">
+          <img
+            src="https://redcarpet-public-bucket.s3.us-west-2.amazonaws.com/Logo.png"
+            alt="Red Carpet"
+            height="32px"
+          />
+        </div>
+        <div class="messagebody1">Hi</div>
+        <div class="messagebody2">
+          Details of {{name.firstname}} {{name.lastname}} has been added to Red
+          Carpet on {{onboardDate}}. <br />
+
+          We are waiting for your approval to complete onboarding. You may find
+          employee's details on Red Carpet. Please review details and approve
+          this request. <br />
+
+          <br />
+          Thank You.
+        </div>
+        <div class="buttonbody">
+          <a href="{{approveEmployeePage}}" target="_blank">
+            <button class="approvebutton">Approve Request</button>
+          </a>
+        </div>
+        <div class="pendingrequest">{{pendingRequestMessage}}</div>
+      </div>
+      <div class="footer">Copyright @ 2023 RedCarpet, All rights reserved.</div>
+    </div>
+  </body>
+</html>

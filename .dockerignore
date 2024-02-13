@@ -1,0 +1,14 @@
+*/node_modules
+node_modules
+build
+infrastructure
+Makefile
+docker*
+Docker*
+env
+**.env
+README.md
+CHANGELOG.md
+jest*
+docker*
+.terra*
